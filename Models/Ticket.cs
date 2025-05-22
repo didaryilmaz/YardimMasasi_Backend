@@ -17,6 +17,6 @@ namespace YardimMasasi.Models
         public Category? Category { get; set; }
         public int PriorityId { get; set; }
         public Priority? Priority { get; set; }
-        public TicketResponse? TicketResponses { get; set; } 
+        public ICollection<TicketResponse> TicketResponses { get; set; } = new List<TicketResponse>();
     }
 }

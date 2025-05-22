@@ -36,6 +36,28 @@ namespace YardimMasasi.Migrations
                     b.HasKey("CategoryId");
 
                     b.ToTable("Categories");
+
+                    b.HasData(
+                        new
+                        {
+                            CategoryId = 1,
+                            CategoryName = "Yazılım Hatası"
+                        },
+                        new
+                        {
+                            CategoryId = 2,
+                            CategoryName = "Donanım Sorunu"
+                        },
+                        new
+                        {
+                            CategoryId = 3,
+                            CategoryName = "Kullanıcı Erişimi"
+                        },
+                        new
+                        {
+                            CategoryId = 4,
+                            CategoryName = "Ağ Problemleri"
+                        });
                 });
 
             modelBuilder.Entity("YardimMasasi.Models.Priority", b =>
@@ -55,6 +77,32 @@ namespace YardimMasasi.Migrations
                     b.HasKey("PriorityId");
 
                     b.ToTable("Priorities");
+
+                    b.HasData(
+                        new
+                        {
+                            PriorityId = 1,
+                            PriorityLevel = 0,
+                            PriorityName = "Düşük"
+                        },
+                        new
+                        {
+                            PriorityId = 2,
+                            PriorityLevel = 0,
+                            PriorityName = "Orta"
+                        },
+                        new
+                        {
+                            PriorityId = 3,
+                            PriorityLevel = 0,
+                            PriorityName = "Yüksek"
+                        },
+                        new
+                        {
+                            PriorityId = 4,
+                            PriorityLevel = 0,
+                            PriorityName = "Acil"
+                        });
                 });
 
             modelBuilder.Entity("YardimMasasi.Models.Ticket", b =>
@@ -85,14 +133,11 @@ namespace YardimMasasi.Migrations
 
                     b.HasKey("TicketId");
 
-                    b.HasIndex("CategoryId")
-                        .IsUnique();
+                    b.HasIndex("CategoryId");
 
-                    b.HasIndex("PriorityId")
-                        .IsUnique();
+                    b.HasIndex("PriorityId");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("Tickets");
                 });
@@ -105,6 +150,9 @@ namespace YardimMasasi.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TicketResponseId"));
 
+                    b.Property<DateTime>("DateTime")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Response")
                         .HasColumnType("text");
 
@@ -114,16 +162,11 @@ namespace YardimMasasi.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("dateTime")
-                        .HasColumnType("timestamp with time zone");
-
                     b.HasKey("TicketResponseId");
 
-                    b.HasIndex("TicketId")
-                        .IsUnique();
+                    b.HasIndex("TicketId");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("TicketResponses");
                 });
@@ -140,12 +183,14 @@ namespace YardimMasasi.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Password")
                         .HasColumnType("text");
 
                     b.Property<string>("Role")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Surname")
@@ -159,20 +204,20 @@ namespace YardimMasasi.Migrations
             modelBuilder.Entity("YardimMasasi.Models.Ticket", b =>
                 {
                     b.HasOne("YardimMasasi.Models.Category", "Category")
-                        .WithOne("Tickets")
-                        .HasForeignKey("YardimMasasi.Models.Ticket", "CategoryId")
+                        .WithMany("Tickets")
+                        .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("YardimMasasi.Models.Priority", "Priority")
-                        .WithOne("Tickets")
-                        .HasForeignKey("YardimMasasi.Models.Ticket", "PriorityId")
+                        .WithMany("Tickets")
+                        .HasForeignKey("PriorityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("YardimMasasi.Models.User", "User")
-                        .WithOne("Tickets")
-                        .HasForeignKey("YardimMasasi.Models.Ticket", "UserId")
+                        .WithMany("Tickets")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -186,14 +231,14 @@ namespace YardimMasasi.Migrations
             modelBuilder.Entity("YardimMasasi.Models.TicketResponse", b =>
                 {
                     b.HasOne("YardimMasasi.Models.Ticket", "Ticket")
-                        .WithOne("TicketResponses")
-                        .HasForeignKey("YardimMasasi.Models.TicketResponse", "TicketId")
+                        .WithMany("TicketResponses")
+                        .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("YardimMasasi.Models.User", "User")
-                        .WithOne("TicketResponses")
-                        .HasForeignKey("YardimMasasi.Models.TicketResponse", "UserId")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -219,8 +264,6 @@ namespace YardimMasasi.Migrations
 
             modelBuilder.Entity("YardimMasasi.Models.User", b =>
                 {
-                    b.Navigation("TicketResponses");
-
                     b.Navigation("Tickets");
                 });
 #pragma warning restore 612, 618

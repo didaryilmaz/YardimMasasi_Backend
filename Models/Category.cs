@@ -9,8 +9,6 @@ namespace YardimMasasi.Models
     {
         public int CategoryId { get; set; }
         public string? CategoryName { get; set; }
-
-        public Ticket? Tickets { get; set; } 
-
+        public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }
 }

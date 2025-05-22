@@ -9,10 +9,13 @@ namespace YardimMasasi.Models
     {
         public int TicketResponseId { get; set; }
         public string? Response { get; set; }
-        public DateTime dateTime { get; set; }
+        public DateTime DateTime { get; set; }
+
         public int TicketId { get; set; }
         public Ticket? Ticket { get; set; }
+
         public int UserId { get; set; }
         public User? User { get; set; }
     }
+
 }

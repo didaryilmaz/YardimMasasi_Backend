@@ -45,11 +45,11 @@ namespace YardimMasasi.Migrations
                 {
                     UserId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: true),
+                    Name = table.Column<string>(type: "text", nullable: false),
                     Surname = table.Column<string>(type: "text", nullable: true),
                     Email = table.Column<string>(type: "text", nullable: true),
                     Password = table.Column<string>(type: "text", nullable: true),
-                    Role = table.Column<string>(type: "text", nullable: true)
+                    Role = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -100,8 +100,7 @@ namespace YardimMasasi.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Response = table.Column<string>(type: "text", nullable: true),
                     dateTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    TicketId = table.Column<int>(type: "integer", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false)
+                    TicketId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -112,43 +111,27 @@ namespace YardimMasasi.Migrations
                         principalTable: "Tickets",
                         principalColumn: "TicketId",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_TicketResponses_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_TicketResponses_TicketId",
                 table: "TicketResponses",
-                column: "TicketId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_TicketResponses_UserId",
-                table: "TicketResponses",
-                column: "UserId",
-                unique: true);
+                column: "TicketId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tickets_CategoryId",
                 table: "Tickets",
-                column: "CategoryId",
-                unique: true);
+                column: "CategoryId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tickets_PriorityId",
                 table: "Tickets",
-                column: "PriorityId",
-                unique: true);
+                column: "PriorityId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tickets_UserId",
                 table: "Tickets",
-                column: "UserId",
-                unique: true);
+                column: "UserId");
         }
 
         /// <inheritdoc />

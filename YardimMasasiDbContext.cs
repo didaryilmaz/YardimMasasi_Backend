@@ -26,5 +26,10 @@ namespace YardimMasasi
                 optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=YardimMasasiDb;Username=postgres;Password=ddrylmz");
             }
         }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            DataSeeder.Seed(modelBuilder);
+        }
     }
 }
