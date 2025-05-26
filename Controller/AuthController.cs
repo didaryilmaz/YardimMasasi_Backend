@@ -37,8 +37,36 @@ namespace YardimMasasi_Backend.Controllers
 
             _context.Users.Add(user);
             _context.SaveChanges();
+
+            // Eğer kullanıcı "Destek" rolündeyse rastgele bir kategori ata
+            if (user.Role == "Destek")
+            {
+                // Veritabanındaki ilk kategoriyi rastgele seç
+                var randomCategory = _context.Categories
+                    .OrderBy(c => Guid.NewGuid()) // rastgele sıralama
+                    .FirstOrDefault();
+
+                if (randomCategory != null)
+                {
+                    var supportCategory = new SupportCategory
+                    {
+                        UserId = user.UserId,
+                        CategoryId = randomCategory.CategoryId
+                    };
+
+                    _context.SupportCategories.Add(supportCategory);
+                    _context.SaveChanges();
+                }
+                else
+                {
+                    return BadRequest("Veritabanında atanabilir kategori bulunamadı.");
+                }
+            }
+
             return Ok("User registered successfully.");
         }
+
+
 
         [HttpGet("getAll")]
         public async Task<IActionResult> GetAll()

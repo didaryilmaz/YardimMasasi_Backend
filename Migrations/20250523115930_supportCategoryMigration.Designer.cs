@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using YardimMasasi;
@@ -11,9 +12,11 @@ using YardimMasasi;
 namespace YardimMasasi.Migrations
 {
     [DbContext(typeof(YardimMasasiDbContext))]
-    partial class YardimMasasiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250523115930_supportCategoryMigration")]
+    partial class supportCategoryMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -136,9 +139,6 @@ namespace YardimMasasi.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TicketId"));
 
-                    b.Property<int?>("AssignedSupportId")
-                        .HasColumnType("integer");
-
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
 
@@ -158,8 +158,6 @@ namespace YardimMasasi.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("TicketId");
-
-                    b.HasIndex("AssignedSupportId");
 
                     b.HasIndex("CategoryId");
 
@@ -250,11 +248,6 @@ namespace YardimMasasi.Migrations
 
             modelBuilder.Entity("YardimMasasi.Models.Ticket", b =>
                 {
-                    b.HasOne("YardimMasasi.Models.User", "AssignedSupport")
-                        .WithMany("AssignedTickets")
-                        .HasForeignKey("AssignedSupportId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("YardimMasasi.Models.Category", "Category")
                         .WithMany("Tickets")
                         .HasForeignKey("CategoryId")
@@ -270,10 +263,8 @@ namespace YardimMasasi.Migrations
                     b.HasOne("YardimMasasi.Models.User", "User")
                         .WithMany("Tickets")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("AssignedSupport");
 
                     b.Navigation("Category");
 
@@ -320,8 +311,6 @@ namespace YardimMasasi.Migrations
 
             modelBuilder.Entity("YardimMasasi.Models.User", b =>
                 {
-                    b.Navigation("AssignedTickets");
-
                     b.Navigation("SupportCategories");
 
                     b.Navigation("Tickets");

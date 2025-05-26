@@ -10,5 +10,7 @@ namespace YardimMasasi.Models
         public int CategoryId { get; set; }
         public string? CategoryName { get; set; }
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+        public ICollection<SupportCategory> SupportCategories { get; set; } = new List<SupportCategory>();
+
     }
 }

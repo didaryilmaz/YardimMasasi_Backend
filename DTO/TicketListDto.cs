@@ -7,4 +7,5 @@ public class TicketListDto
     public string Priority { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public int UserId { get; set; }
+    public int? AssignedSupportId { get; set; }
 }

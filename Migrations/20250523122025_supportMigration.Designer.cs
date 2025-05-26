@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using YardimMasasi;
@@ -11,9 +12,11 @@ using YardimMasasi;
 namespace YardimMasasi.Migrations
 {
     [DbContext(typeof(YardimMasasiDbContext))]
-    partial class YardimMasasiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250523122025_supportMigration")]
+    partial class supportMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -253,7 +256,7 @@ namespace YardimMasasi.Migrations
                     b.HasOne("YardimMasasi.Models.User", "AssignedSupport")
                         .WithMany("AssignedTickets")
                         .HasForeignKey("AssignedSupportId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("YardimMasasi.Models.Category", "Category")
                         .WithMany("Tickets")
@@ -270,7 +273,7 @@ namespace YardimMasasi.Migrations
                     b.HasOne("YardimMasasi.Models.User", "User")
                         .WithMany("Tickets")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("AssignedSupport");

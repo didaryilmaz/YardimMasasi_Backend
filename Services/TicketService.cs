@@ -24,8 +24,10 @@ public class TicketService : ITicketService
                 Priority = t.Priority.PriorityName,
                 Status = t.IsCompleted ? "Tamamlandı" : "Açık",
                 CreatedAt = t.dateTime,
-                UserId = t.UserId
-            }).ToListAsync();
+                UserId = t.UserId,
+                AssignedSupportId = t.AssignedSupportId 
+            })
+            .ToListAsync();
     }
 
     public async Task<TicketListDto?> GetTicketByIdAsync(int id)
@@ -76,17 +78,56 @@ public class TicketService : ITicketService
 
     public async Task<Ticket> CreateTicketAsync(TicketCreateDto dto, int userId)
     {
+        Console.WriteLine($"Ticket oluşturuluyor. CategoryId: {dto.CategoryId}");
+        
         var ticket = new Ticket
         {
             Description = dto.Description,
             CategoryId = dto.CategoryId,
             PriorityId = dto.PriorityId,
             dateTime = DateTime.UtcNow,
-            UserId = userId
+            UserId = userId,
+            IsCompleted = false
         };
+
+        var availableSupportUsers = await _context.SupportCategories
+            .Where(sc => sc.CategoryId == dto.CategoryId && sc.User != null && sc.User.Role == "Destek")
+            .Include(sc => sc.User)
+            .Select(sc => sc.User!)
+            .ToListAsync();
+
+        Console.WriteLine($"Kategoriye atanmış destek sayısı: {availableSupportUsers.Count}");
+
+        if (availableSupportUsers.Any())
+        {
+            // Her destek kullanıcısı için aktif ticket sayısını al
+            var supportWithTicketCounts = new List<(User user, int activeTicketCount)>();
+
+            foreach (var user in availableSupportUsers)
+            {
+                var count = await _context.Tickets
+                    .CountAsync(t => t.AssignedSupportId == user.UserId && !t.IsCompleted);
+
+                supportWithTicketCounts.Add((user, count));
+            }
+
+            // En az aktif ticket'a sahip kullanıcıyı bul
+            var selectedSupport = supportWithTicketCounts
+                .OrderBy(x => x.activeTicketCount)
+                .First();
+
+            ticket.AssignedSupportId = selectedSupport.user.UserId;
+            Console.WriteLine($"Destek kullanıcısı atandı: {ticket.AssignedSupportId}");
+        }
+        else
+        {
+            Console.WriteLine("Bu kategoriye atanmış destek kullanıcısı bulunamadı.");
+        }
 
         _context.Tickets.Add(ticket);
         await _context.SaveChangesAsync();
+
+        Console.WriteLine($"Kaydedilen ticket AssignedSupportId: {ticket.AssignedSupportId}");
 
         return ticket;
     }

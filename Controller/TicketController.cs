@@ -2,6 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using YardimMasasi;
 using YardimMasasi.Models;
 using YardimMasasi_Backend.Services;
 
@@ -15,10 +17,16 @@ namespace YardimMasasi_Backend.Controllers
     {
         private readonly ITicketService _ticketService;
         private readonly ITicketResponseService _ticketResponseService;
-        public TicketController(ITicketService ticketService, ITicketResponseService ticketResponseService)
+        private readonly YardimMasasiDbContext _context;
+
+        public TicketController(
+            ITicketService ticketService,
+            ITicketResponseService ticketResponseService,
+            YardimMasasiDbContext context)
         {
             _ticketService = ticketService;
             _ticketResponseService = ticketResponseService;
+            _context = context;
         }
 
         [HttpGet("mytickets")]
@@ -122,7 +130,8 @@ namespace YardimMasasi_Backend.Controllers
 
             return Ok(allTickets);
         }
-        [Authorize(Roles = "Admin")]
+
+        [Authorize(Roles = "Destek,Admin")]
         [HttpGet("report/bycategory")]
         public async Task<IActionResult> GetTicketCountsByCategory()
         {
@@ -134,7 +143,8 @@ namespace YardimMasasi_Backend.Controllers
 
             return Ok(grouped);
         }
-        [Authorize(Roles = "Admin")]
+
+        [Authorize(Roles = "Destek,Admin")]
         [HttpGet("report/category-frequency")]
         public async Task<IActionResult> GetCategoryFrequency([FromServices] IReportService reportService)
         {
@@ -142,13 +152,28 @@ namespace YardimMasasi_Backend.Controllers
             return Ok(result);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Destek,Admin")]
         [HttpGet("report/priority-frequency")]
         public async Task<IActionResult> GetPriorityFrequency([FromServices] IReportService reportService)
         {
             var result = await reportService.GetPriorityFrequencyAsync();
             return Ok(result);
         }
+
+        // Kategori listesini dönen endpoint
+        [HttpGet("categories")]
+        public async Task<IActionResult> GetCategories()
+        {
+            var categories = await _context.Categories.ToListAsync();
+            return Ok(categories);
+        }
+
+        // Öncelik listesini dönen endpoint
+        [HttpGet("priorities")]
+        public async Task<IActionResult> GetPriorities()
+        {
+            var priorities = await _context.Priorities.ToListAsync();
+            return Ok(priorities);
+        }
     }
 }
- 
