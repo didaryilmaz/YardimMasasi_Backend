@@ -1,0 +1,60 @@
+-- User log fonksiyonu
+CREATE OR REPLACE FUNCTION log_user_changes()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO user_log(operation_type, user_id, name, surname, email, password, role)
+        VALUES ('INSERT', NEW.userid, NEW.name, NEW.surname, NEW.email, NEW.password, NEW.role);
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO user_log(operation_type, user_id, name, surname, email, password, role)
+        VALUES ('UPDATE', NEW.userid, NEW.name, NEW.surname, NEW.email, NEW.password, NEW.role);
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO user_log(operation_type, user_id, name, surname, email, password, role)
+        VALUES ('DELETE', OLD.userid, OLD.name, OLD.surname, OLD.email, OLD.password, OLD.role);
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ticket log fonksiyonu
+CREATE OR REPLACE FUNCTION log_ticket_changes()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO ticket_log(operation_type, ticket_id, description, datetime, is_completed, user_id, assigned_support_id, category_id, priority_id)
+    VALUES (
+      'INSERT', NEW."TicketId", NEW."Description", NEW."dateTime", NEW."IsCompleted", NEW."UserId", NEW."AssignedSupportId", NEW."CategoryId", NEW."PriorityId"
+    );
+    RETURN NEW;
+
+  ELSIF TG_OP = 'DELETE' THEN
+    INSERT INTO ticket_log(operation_type, ticket_id, description, datetime, is_completed, user_id, assigned_support_id, category_id, priority_id)
+    VALUES (
+      'DELETE', OLD."TicketId", OLD."Description", OLD."dateTime", OLD."IsCompleted", OLD."UserId", OLD."AssignedSupportId", OLD."CategoryId", OLD."PriorityId"
+    );
+    RETURN OLD;
+  END IF;
+  
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+-- TicketResponse log fonksiyonu
+CREATE OR REPLACE FUNCTION log_ticket_response_changes()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO ticket_response_log(operation_type, ticket_response_id, response, datetime, ticket_id, user_id)
+        VALUES ('INSERT', NEW.ticketresponseid, NEW.response, NEW.datetime, NEW.ticketid, NEW.userid);
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO ticket_response_log(operation_type, ticket_response_id, response, datetime, ticket_id, user_id)
+        VALUES ('UPDATE', NEW.ticketresponseid, NEW.response, NEW.datetime, NEW.ticketid, NEW.userid);
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO ticket_response_log(operation_type, ticket_response_id, response, datetime, ticket_id, user_id)
+        VALUES ('DELETE', OLD.ticketresponseid, OLD.response, OLD.datetime, OLD.ticketid, OLD.userid);
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
