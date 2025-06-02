@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using YardimMasasi;
@@ -11,9 +12,11 @@ using YardimMasasi;
 namespace YardimMasasi.Migrations
 {
     [DbContext(typeof(YardimMasasiDbContext))]
-    partial class YardimMasasiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250528112555_FixSupportCategoryRelations")]
+    partial class FixSupportCategoryRelations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,12 +71,17 @@ namespace YardimMasasi.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("CategoryId1")
+                        .HasColumnType("integer");
+
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("SupportCategoryId");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("CategoryId1");
 
                     b.HasIndex("UserId");
 
@@ -184,15 +192,19 @@ namespace YardimMasasi.Migrations
             modelBuilder.Entity("YardimMasasi.Models.SupportCategory", b =>
                 {
                     b.HasOne("YardimMasasi.Models.Category", "Category")
-                        .WithMany("SupportCategories")
+                        .WithMany()
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("YardimMasasi.Models.Category", null)
+                        .WithMany("SupportCategories")
+                        .HasForeignKey("CategoryId1");
 
                     b.HasOne("YardimMasasi.Models.User", "User")
                         .WithMany("SupportCategories")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");

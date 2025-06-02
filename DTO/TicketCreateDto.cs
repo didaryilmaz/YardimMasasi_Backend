@@ -10,5 +10,8 @@ public class TicketCreateDto
 
     [Required]
     public int PriorityId { get; set; }
+    [Required]
+    public int UserId { get; set; }
+
 }
 

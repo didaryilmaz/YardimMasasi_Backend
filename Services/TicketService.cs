@@ -25,7 +25,7 @@ public class TicketService : ITicketService
                 Status = t.IsCompleted ? "Tamamlandı" : "Açık",
                 CreatedAt = t.dateTime,
                 UserId = t.UserId,
-                AssignedSupportId = t.AssignedSupportId 
+                AssignedSupportId = t.AssignedSupportId
             })
             .ToListAsync();
     }
@@ -79,7 +79,7 @@ public class TicketService : ITicketService
     public async Task<Ticket> CreateTicketAsync(TicketCreateDto dto, int userId)
     {
         Console.WriteLine($"Ticket oluşturuluyor. CategoryId: {dto.CategoryId}");
-        
+
         var ticket = new Ticket
         {
             Description = dto.Description,
@@ -131,5 +131,29 @@ public class TicketService : ITicketService
 
         return ticket;
     }
+    
+    //DEFTER
+    public async Task<List<TicketListDto>> GetTicketsForSupportUserAsync(int supportUserId)
+    {
+        var filteredTickets = await _context.Tickets
+            .Where(t => t.AssignedSupportId == supportUserId && !t.IsCompleted)
+            .OrderBy(t => t.dateTime)
+            .Select(t => new TicketListDto
+            {
+                Id = t.TicketId,
+                Description = t.Description,
+                Category = t.Category.CategoryName,
+                Priority = t.Priority.PriorityName,
+                Status = t.IsCompleted ? "Tamamlandı" : "Açık",
+                CreatedAt = t.dateTime,
+                UserId = t.UserId,
+                AssignedSupportId = t.AssignedSupportId
+            })
+            .ToListAsync();
+
+        return filteredTickets;
+    }
+
+
 
 }

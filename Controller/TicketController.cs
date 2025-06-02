@@ -18,14 +18,18 @@ namespace YardimMasasi_Backend.Controllers
         private readonly ITicketService _ticketService;
         private readonly ITicketResponseService _ticketResponseService;
         private readonly YardimMasasiDbContext _context;
+        private readonly IReportService _reportService;
 
         public TicketController(
             ITicketService ticketService,
             ITicketResponseService ticketResponseService,
-            YardimMasasiDbContext context)
+            IReportService reportService,
+            YardimMasasiDbContext context
+            )
         {
             _ticketService = ticketService;
             _ticketResponseService = ticketResponseService;
+            _reportService = reportService;
             _context = context;
         }
 
@@ -78,9 +82,24 @@ namespace YardimMasasi_Backend.Controllers
         [HttpGet("getAllTicketsByRole")]
         public async Task<IActionResult> GetAllTicketsByRole()
         {
-            var tickets = await _ticketService.GetAllTicketsAsync();
-            return Ok(tickets);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (userRole == "Admin")
+            {
+                var tickets = await _ticketService.GetAllTicketsAsync();
+                return Ok(tickets);
+            }
+
+            if (userRole == "Destek")
+            {
+                var tickets = await _ticketService.GetTicketsForSupportUserAsync(userId);
+                return Ok(tickets);
+            }
+
+            return Forbid();
         }
+
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTicketById(int id)
@@ -146,21 +165,22 @@ namespace YardimMasasi_Backend.Controllers
 
         [Authorize(Roles = "Destek,Admin")]
         [HttpGet("report/category-frequency")]
-        public async Task<IActionResult> GetCategoryFrequency([FromServices] IReportService reportService)
+        public async Task<IActionResult> GetCategoryFrequency()
         {
-            var result = await reportService.GetCategoryFrequencyAsync();
+            var result = await _reportService.GetCategoryFrequencyAsync();
             return Ok(result);
         }
 
         [Authorize(Roles = "Destek,Admin")]
         [HttpGet("report/priority-frequency")]
-        public async Task<IActionResult> GetPriorityFrequency([FromServices] IReportService reportService)
+        public async Task<IActionResult> GetPriorityFrequency()
         {
-            var result = await reportService.GetPriorityFrequencyAsync();
+            var result = await _reportService.GetPriorityFrequencyAsync();
             return Ok(result);
         }
-
-        // Kategori listesini dönen endpoint
+        
+        // Kategori işlemleri
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("categories")]
         public async Task<IActionResult> GetCategories()
         {
@@ -168,12 +188,63 @@ namespace YardimMasasi_Backend.Controllers
             return Ok(categories);
         }
 
-        // Öncelik listesini dönen endpoint
+        [Authorize(Roles = "Admin,User")]
+        [HttpPost("categories")]
+        public async Task<IActionResult> AddCategory([FromBody] Category category)
+        {
+            if (string.IsNullOrWhiteSpace(category.CategoryName))
+                return BadRequest("Kategori adı boş olamaz.");
+
+            _context.Categories.Add(category);
+            await _context.SaveChangesAsync();
+            return Ok(category);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("categories/{id}")]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
+                return NotFound();
+
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // Öncelik işlemleri
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("priorities")]
         public async Task<IActionResult> GetPriorities()
         {
             var priorities = await _context.Priorities.ToListAsync();
             return Ok(priorities);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("priorities")]
+        public async Task<IActionResult> AddPriority([FromBody] Priority priority)
+        {
+            if (string.IsNullOrWhiteSpace(priority.PriorityName))
+                return BadRequest("Öncelik adı boş olamaz.");
+
+            _context.Priorities.Add(priority);
+            await _context.SaveChangesAsync();
+            return Ok(priority);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("priorities/{id}")]
+        public async Task<IActionResult> DeletePriority(int id)
+        {
+            var priority = await _context.Priorities.FindAsync(id);
+            if (priority == null)
+                return NotFound();
+
+            _context.Priorities.Remove(priority);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

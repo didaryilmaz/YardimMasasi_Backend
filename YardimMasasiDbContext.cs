@@ -31,7 +31,6 @@ namespace YardimMasasi
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            DataSeeder.Seed(modelBuilder);
 
             // Ticket -> User (talep oluşturan)
             modelBuilder.Entity<Ticket>()
