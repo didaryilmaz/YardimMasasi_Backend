@@ -132,7 +132,6 @@ public class TicketService : ITicketService
         return ticket;
     }
     
-    //DEFTER
     public async Task<List<TicketListDto>> GetTicketsForSupportUserAsync(int supportUserId)
     {
         var filteredTickets = await _context.Tickets
