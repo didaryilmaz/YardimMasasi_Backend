@@ -1,0 +1,180 @@
+CREATE OR REPLACE PROCEDURE create_ticket(
+    p_description TEXT,
+    p_category_id INT,
+    p_priority_id INT,
+    p_user_id INT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_assigned_support_id INT;
+BEGIN
+    -- En az aktif ticket'a sahip destek kullanıcısını bul
+    SELECT sc.user_id
+    INTO v_assigned_support_id
+    FROM support_categories sc
+    JOIN users u ON u.user_id = sc.user_id
+    LEFT JOIN tickets t ON t.assigned_support_id = sc.user_id AND t.is_completed = FALSE
+    WHERE sc.category_id = p_category_id AND u.role = 'Destek'
+    GROUP BY sc.user_id
+    ORDER BY COUNT(t.ticket_id)
+    LIMIT 1;
+
+    -- Yeni ticket oluştur
+    INSERT INTO tickets (description, category_id, priority_id, datetime, user_id, is_completed, assigned_support_id)
+    VALUES (
+        p_description,
+        p_category_id,
+        p_priority_id,
+        CURRENT_TIMESTAMP,
+        p_user_id,
+        FALSE,
+        v_assigned_support_id
+    );
+END;
+$$;
+
+
+CREATE OR REPLACE PROCEDURE update_ticket(
+    p_ticket_id INT,
+    p_description TEXT,
+    p_category_id INT,
+    p_priority_id INT,
+    p_is_completed BOOLEAN
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    UPDATE tickets
+    SET description = p_description,
+        category_id = p_category_id,
+        priority_id = p_priority_id,
+        is_completed = p_is_completed
+    WHERE ticket_id = p_ticket_id;
+END;
+$$;
+
+
+CREATE OR REPLACE PROCEDURE delete_ticket(p_ticket_id INT)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    DELETE FROM tickets WHERE ticket_id = p_ticket_id;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION get_ticket_by_id(ticket_id INT)
+RETURNS TABLE (
+    ticket_id INT,
+    description TEXT,
+    category_name TEXT,
+    priority_name TEXT,
+    status TEXT,
+    created_at TIMESTAMP,
+    user_id INT,
+    assigned_support_id INT
+)
+LANGUAGE sql
+AS $$
+    SELECT
+        t."TicketId",
+        t."Description",
+        c."CategoryName",
+        p."PriorityName",
+        CASE WHEN t."IsCompleted" THEN 'Tamamlandı' ELSE 'Açık' END AS status,
+        t."dateTime",
+        t."UserId",
+        t."AssignedSupportId"
+    FROM "Tickets" t
+    JOIN "Categories" c ON t."CategoryId" = c."CategoryId"
+    JOIN "Priorities" p ON t."PriorityId" = p."PriorityId"
+    WHERE t."TicketId" = $1;
+$$;
+
+
+CREATE OR REPLACE FUNCTION get_all_tickets()
+RETURNS TABLE (
+    ticket_id INT,
+    description TEXT,
+    category_name TEXT,
+    priority_name TEXT,
+    status TEXT,
+    created_at TIMESTAMP,
+    user_id INT,
+    assigned_support_id INT
+)
+LANGUAGE sql
+AS $$
+    SELECT
+        t."TicketId",
+        t."Description",
+        c."CategoryName",
+        p."PriorityName",
+        CASE WHEN t."IsCompleted" THEN 'Tamamlandı' ELSE 'Açık' END AS status,
+        t."dateTime",
+        t."UserId",
+        t."AssignedSupportId"
+    FROM "Tickets" t
+    JOIN "Categories" c ON t."CategoryId" = c."CategoryId"
+    JOIN "Priorities" p ON t."PriorityId" = p."PriorityId"
+    ORDER BY t."dateTime" DESC;
+$$;
+
+CREATE OR REPLACE FUNCTION add_ticket_response(
+    p_ticket_id INT,
+    p_user_id INT,
+    p_response TEXT
+)
+RETURNS TABLE (
+    ticketresponseid INT,
+    response TEXT,
+    datetime TIMESTAMPTZ,
+    ticketid INT,
+    userid INT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    INSERT INTO "TicketResponses" ("TicketId", "UserId", "Response", "DateTime")
+    VALUES (p_ticket_id, p_user_id, p_response, NOW())
+    RETURNING 
+        "TicketResponseId",
+        "Response",
+        "DateTime",
+        "TicketId",
+        "UserId";
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_category_frequency()
+RETURNS TABLE (
+    category_name TEXT,
+    ticket_count INT
+)
+LANGUAGE SQL
+AS $$
+    SELECT 
+        c."CategoryName",
+        COUNT(t."TicketId") AS ticket_count
+    FROM "Categories" c
+    LEFT JOIN "Tickets" t ON c."CategoryId" = t."CategoryId"
+    GROUP BY c."CategoryName";
+$$;
+
+
+CREATE OR REPLACE FUNCTION get_priority_frequency()
+RETURNS TABLE (
+    priority_name TEXT,
+    ticket_count INT
+)
+LANGUAGE SQL
+AS $$
+    SELECT 
+        p."PriorityName",
+        COUNT(t."TicketId") AS ticket_count
+    FROM "Priorities" p
+    LEFT JOIN "Tickets" t ON p."PriorityId" = t."PriorityId"
+    GROUP BY p."PriorityName";
+$$;

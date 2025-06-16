@@ -1,158 +1,177 @@
-using Microsoft.EntityFrameworkCore;
-using YardimMasasi;
+using Npgsql;
 using YardimMasasi.Models;
+using Microsoft.Extensions.Configuration;
 
 public class TicketService : ITicketService
 {
-    private readonly YardimMasasiDbContext _context;
+    private readonly string _connectionString;
 
-    public TicketService(YardimMasasiDbContext context)
+    public TicketService(IConfiguration configuration)
     {
-        _context = context;
+        _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+    }
+
+    public async Task<bool> CreateTicketAsync(TicketCreateDto dto)
+    {
+        try
+        {
+            await using var dataSource = NpgsqlDataSource.Create(_connectionString);
+            await using var cmd = dataSource.CreateCommand("CALL create_ticket(@description, @categoryId, @priorityId, @userId)");
+
+            cmd.Parameters.AddWithValue("@description", dto.Description);
+            cmd.Parameters.AddWithValue("@categoryId", dto.CategoryId);
+            cmd.Parameters.AddWithValue("@priorityId", dto.PriorityId);
+            cmd.Parameters.AddWithValue("@userId", dto.UserId);
+            
+            await cmd.ExecuteNonQueryAsync();
+            return true;
+        }
+        catch (NpgsqlException ex)
+        {
+            Console.WriteLine($"Veritabanı hatası: {ex.Message}");
+            return false;
+        }
+        
+    }
+
+    public async Task<bool> UpdateTicketAsync(int ticketId, TicketUpdateDto dto)
+    {
+        try
+        {
+            await using var dataSource = NpgsqlDataSource.Create(_connectionString);
+            await using var cmd = dataSource.CreateCommand("CALL update_ticket($1, $2, $3, $4, $5)");
+
+            cmd.Parameters.AddWithValue(ticketId);
+            cmd.Parameters.AddWithValue(dto.Description);
+            cmd.Parameters.AddWithValue(dto.CategoryId);
+            cmd.Parameters.AddWithValue(dto.PriorityId);
+            cmd.Parameters.AddWithValue(dto.IsCompleted);
+
+            await cmd.ExecuteNonQueryAsync();
+            return true;
+        }
+        catch (NpgsqlException ex)
+        {
+            Console.WriteLine($"Veritabanı hatası: {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteTicketAsync(int ticketId)
+    {
+        try
+        {
+            await using var dataSource = NpgsqlDataSource.Create(_connectionString);
+            await using var cmd = dataSource.CreateCommand("CALL delete_ticket($1)");
+
+            cmd.Parameters.AddWithValue(ticketId);
+            await cmd.ExecuteNonQueryAsync();
+            return true;
+        }
+        catch (NpgsqlException ex)
+        {
+            Console.WriteLine($"Veritabanı hatası: {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<List<TicketListDto>> GetTicketsForSupportUserAsync(int supportUserId)
+    {
+        var result = new List<TicketListDto>();
+
+        try
+        {
+            await using var dataSource = NpgsqlDataSource.Create(_connectionString);
+            await using var cmd = dataSource.CreateCommand("SELECT * FROM get_tickets_for_support($1)");
+            cmd.Parameters.AddWithValue(supportUserId);
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                result.Add(new TicketListDto
+                {
+                    Id = reader.GetInt32(0),
+                    Description = reader.GetString(1),
+                    Category = reader.GetString(2),
+                    Priority = reader.GetString(3),
+                    Status = reader.GetString(4),
+                    CreatedAt = reader.GetDateTime(5),
+                    UserId = reader.GetInt32(6),
+                    AssignedSupportId = reader.IsDBNull(7) ? null : reader.GetInt32(7)
+                });
+            }
+        }
+        catch (NpgsqlException ex)
+        {
+            Console.WriteLine($"Veritabanı hatası: {ex.Message}");
+        }
+
+        return result;
     }
 
     public async Task<List<TicketListDto>> GetAllTicketsAsync()
     {
-        return await _context.Tickets
-            .Include(t => t.Category)
-            .Include(t => t.Priority)
-            .Select(t => new TicketListDto
+        var result = new List<TicketListDto>();
+
+        try
+        {
+            await using var dataSource = NpgsqlDataSource.Create(_connectionString);
+            await using var cmd = dataSource.CreateCommand("SELECT * FROM get_all_tickets()");
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                Id = t.TicketId,
-                Description = t.Description,
-                Category = t.Category.CategoryName,
-                Priority = t.Priority.PriorityName,
-                Status = t.IsCompleted ? "Tamamlandı" : "Açık",
-                CreatedAt = t.dateTime,
-                UserId = t.UserId,
-                AssignedSupportId = t.AssignedSupportId
-            })
-            .ToListAsync();
-    }
-
-    public async Task<TicketListDto?> GetTicketByIdAsync(int id)
-    {
-        var ticket = await _context.Tickets
-            .Include(t => t.Category)
-            .Include(t => t.Priority)
-            .FirstOrDefaultAsync(t => t.TicketId == id);
-
-        if (ticket == null)
-            return null;
-
-        return new TicketListDto
-        {
-            Id = ticket.TicketId,
-            Description = ticket.Description,
-            Category = ticket.Category?.CategoryName ?? "",
-            Priority = ticket.Priority?.PriorityName ?? "",
-            Status = ticket.IsCompleted ? "Tamamlandı" : "Açık",
-            CreatedAt = ticket.dateTime,
-            UserId = ticket.UserId
-        };
-    }
-
-    public async Task<bool> UpdateTicketAsync(int id, TicketUpdateDto dto)
-    {
-        var ticket = await _context.Tickets.FindAsync(id);
-        if (ticket == null) return false;
-
-        ticket.Description = dto.Description;
-        ticket.CategoryId = dto.CategoryId;
-        ticket.PriorityId = dto.PriorityId;
-        ticket.IsCompleted = dto.IsCompleted;
-
-        await _context.SaveChangesAsync();
-        return true;
-    }
-
-    public async Task<bool> DeleteTicketAsync(int id)
-    {
-        var ticket = await _context.Tickets.FindAsync(id);
-        if (ticket == null) return false;
-
-        _context.Tickets.Remove(ticket);
-        await _context.SaveChangesAsync();
-        return true;
-    }
-
-    public async Task<Ticket> CreateTicketAsync(TicketCreateDto dto, int userId)
-    {
-        Console.WriteLine($"Ticket oluşturuluyor. CategoryId: {dto.CategoryId}");
-
-        var ticket = new Ticket
-        {
-            Description = dto.Description,
-            CategoryId = dto.CategoryId,
-            PriorityId = dto.PriorityId,
-            dateTime = DateTime.UtcNow,
-            UserId = userId,
-            IsCompleted = false
-        };
-
-        var availableSupportUsers = await _context.SupportCategories
-            .Where(sc => sc.CategoryId == dto.CategoryId && sc.User != null && sc.User.Role == "Destek")
-            .Include(sc => sc.User)
-            .Select(sc => sc.User!)
-            .ToListAsync();
-
-        Console.WriteLine($"Kategoriye atanmış destek sayısı: {availableSupportUsers.Count}");
-
-        if (availableSupportUsers.Any())
-        {
-            // Her destek kullanıcısı için aktif ticket sayısını al
-            var supportWithTicketCounts = new List<(User user, int activeTicketCount)>();
-
-            foreach (var user in availableSupportUsers)
-            {
-                var count = await _context.Tickets
-                    .CountAsync(t => t.AssignedSupportId == user.UserId && !t.IsCompleted);
-
-                supportWithTicketCounts.Add((user, count));
+                result.Add(new TicketListDto
+                {
+                    Id = reader.GetInt32(0),
+                    Description = reader.GetString(1),
+                    Category = reader.GetString(2),
+                    Priority = reader.GetString(3),
+                    Status = reader.GetString(4),
+                    CreatedAt = reader.GetDateTime(5),
+                    UserId = reader.GetInt32(6),
+                    AssignedSupportId = reader.IsDBNull(7) ? null : reader.GetInt32(7)
+                });
             }
-
-            // En az aktif ticket'a sahip kullanıcıyı bul
-            var selectedSupport = supportWithTicketCounts
-                .OrderBy(x => x.activeTicketCount)
-                .First();
-
-            ticket.AssignedSupportId = selectedSupport.user.UserId;
-            Console.WriteLine($"Destek kullanıcısı atandı: {ticket.AssignedSupportId}");
         }
-        else
+        catch (NpgsqlException ex)
         {
-            Console.WriteLine("Bu kategoriye atanmış destek kullanıcısı bulunamadı.");
+            Console.WriteLine($"Veritabanı hatası: {ex.Message}");
         }
 
-        _context.Tickets.Add(ticket);
-        await _context.SaveChangesAsync();
-
-        Console.WriteLine($"Kaydedilen ticket AssignedSupportId: {ticket.AssignedSupportId}");
-
-        return ticket;
+        return result;
     }
-    
-    public async Task<List<TicketListDto>> GetTicketsForSupportUserAsync(int supportUserId)
+
+    public async Task<TicketListDto?> GetTicketByIdAsync(int ticketId)
     {
-        var filteredTickets = await _context.Tickets
-            .Where(t => t.AssignedSupportId == supportUserId && !t.IsCompleted)
-            .OrderBy(t => t.dateTime)
-            .Select(t => new TicketListDto
+        try
+        {
+            await using var dataSource = NpgsqlDataSource.Create(_connectionString);
+            await using var cmd = dataSource.CreateCommand("SELECT * FROM get_ticket_by_id($1)");
+            cmd.Parameters.AddWithValue(ticketId);
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
             {
-                Id = t.TicketId,
-                Description = t.Description,
-                Category = t.Category.CategoryName,
-                Priority = t.Priority.PriorityName,
-                Status = t.IsCompleted ? "Tamamlandı" : "Açık",
-                CreatedAt = t.dateTime,
-                UserId = t.UserId,
-                AssignedSupportId = t.AssignedSupportId
-            })
-            .ToListAsync();
+                return new TicketListDto
+                {
+                    Id = reader.GetInt32(0),
+                    Description = reader.GetString(1),
+                    Category = reader.GetString(2),
+                    Priority = reader.GetString(3),
+                    Status = reader.GetString(4),
+                    CreatedAt = reader.GetDateTime(5),
+                    UserId = reader.GetInt32(6),
+                    AssignedSupportId = reader.IsDBNull(7) ? null : reader.GetInt32(7)
+                };
+            }
+        }
+        catch (NpgsqlException ex)
+        {
+            Console.WriteLine($"Veritabanı hatası: {ex.Message}");
+        }
 
-        return filteredTickets;
+        return null;
     }
-
-
-
 }

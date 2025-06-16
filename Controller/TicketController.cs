@@ -48,15 +48,19 @@ namespace YardimMasasi_Backend.Controllers
         }
 
         [HttpPost("createTicket")]
+        [Authorize]
         public async Task<IActionResult> CreateTicket([FromBody] TicketCreateDto dto)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-                return Unauthorized();
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            dto.UserId = userId;
 
-            var createdTicket = await _ticketService.CreateTicketAsync(dto, int.Parse(userId));
-            return Ok(createdTicket);
+            var result = await _ticketService.CreateTicketAsync(dto);
+            return Ok(result);
         }
+
+
+        
+
 
         [HttpPut("updateTicket/{id}")]
         public async Task<IActionResult> UpdateTicket(int id, [FromBody] TicketUpdateDto dto)

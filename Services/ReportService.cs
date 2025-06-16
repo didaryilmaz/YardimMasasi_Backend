@@ -1,40 +1,53 @@
-using Microsoft.EntityFrameworkCore;
-using YardimMasasi;
+using Npgsql;
+using System.Data;
 using YardimMasasi_Backend.Services;
 
 public class ReportService : IReportService
 {
-    private readonly YardimMasasiDbContext _context;
+    private readonly string _connectionString;
 
-    public ReportService(YardimMasasiDbContext context)
+    public ReportService(IConfiguration configuration)
     {
-        _context = context;
+        _connectionString = configuration.GetConnectionString("DefaultConnection")!;
     }
 
-    public async Task<object> GetCategoryFrequencyAsync()
+    public async Task<IEnumerable<object>> GetCategoryFrequencyAsync()
     {
-        var result = await _context.Categories
-            .Select(c => new
+        var list = new List<object>();
+
+        await using var dataSource = NpgsqlDataSource.Create(_connectionString);
+        await using var cmd = dataSource.CreateCommand("SELECT * FROM get_category_frequency()");
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            list.Add(new
             {
-                c.CategoryName,
-                TicketCount = c.Tickets.Count
-            })
-            .ToListAsync();
+                CategoryName = reader.GetString(0),
+                TicketCount = reader.GetInt32(1)
+            });
+        }
 
-        return result;
+        return list;
     }
 
-    public async Task<object> GetPriorityFrequencyAsync()
+    public async Task<IEnumerable<object>> GetPriorityFrequencyAsync()
     {
-        var result = await _context.Priorities
-            .Select(p => new
+        var list = new List<object>();
+
+        await using var dataSource = NpgsqlDataSource.Create(_connectionString);
+        await using var cmd = dataSource.CreateCommand("SELECT * FROM get_priority_frequency()");
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            list.Add(new
             {
-                p.PriorityName,
-                TicketCount = p.Tickets.Count
-            })
-            .ToListAsync();
+                PriorityName = reader.GetString(0),
+                TicketCount = reader.GetInt32(1)
+            });
+        }
 
-        return result;
+        return list;
     }
-
 }

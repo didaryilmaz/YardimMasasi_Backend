@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("YardimMasasi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0bf18caed685e92089be345d4a4b20701d3acfc2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ea6f0206cb75411366a21063f4cc58a2808b5fba")]
 [assembly: System.Reflection.AssemblyProductAttribute("YardimMasasi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("YardimMasasi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
