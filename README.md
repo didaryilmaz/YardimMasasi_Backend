@@ -21,8 +21,8 @@ Bu proje, bir yardım masası (destek sistemi) uygulamasının backend kısmın�
 2. **Projeyi Klonlayın:**
 
    ```bash
-   git clone https://github.com/kullaniciadi/yardim-masasi-backend.git
-   cd yardim-masasi-backend
+   git clone https://github.com/didaryilmaz/YardimMasasi_Backend.git
+   cd YardimMasasi_Backend
    ```
 
 3. **Veritabanı Ayarları:**
@@ -49,7 +49,7 @@ Bu proje, bir yardım masası (destek sistemi) uygulamasının backend kısmın�
    dotnet run
    ```
 
-   API, varsayılan olarak `https://localhost:5001` veya `http://localhost:5000` adreslerinden erişilebilir olacaktır.
+   API, varsayılan olarak `http://localhost:5000` adresinden erişilebilir olacaktır.
 
 ## Temel Özellikler
 
